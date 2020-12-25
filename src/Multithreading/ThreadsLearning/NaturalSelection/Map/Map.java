@@ -38,8 +38,15 @@ public class Map {
     /**
      *  Returns random value that is < {@param upperBound};
      */
-    private int getRandomValue(Random random, int upperBound) {
+    public int getRandomValue(Random random, int upperBound) {
         return random.nextInt(upperBound);
+    }
+
+    /**
+     *  This method returns a value in the lower and upper bounds range, INCLUDING both bounds.
+     */
+    public int getRandomValue(Random random, int lowerBound, int upperBound) {
+        return lowerBound + random.nextInt(upperBound - lowerBound + 1);
     }
 
     /* Getters */

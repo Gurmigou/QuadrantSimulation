@@ -13,7 +13,8 @@ public abstract class AbstractLivable implements Livable, Runnable {
     private int column;
 
     // a map where a simulation takes place;
-    private final Map simulationMap;
+    // use protected modifier to simplify access
+    protected final Map simulationMap;
 
     public AbstractLivable(Map simulationMap, int row, int column) {
         this.simulationMap = simulationMap;
@@ -56,17 +57,18 @@ public abstract class AbstractLivable implements Livable, Runnable {
      * The creature should stop participating in the simulation if it hasn't eaten
      * any food-units during a simulation cycle.
      */
-    public abstract void die();
+    public abstract boolean die();
+
+    /**
+     * The creature should perform a reproduce action.
+     */
+    public abstract Thread reproduce();
 
 
     public abstract void run();
 
 
     /* Getters */
-    public int getNumOfEatenFood() {
-        return numOfEatenFood;
-    }
-
     public int getRow() {
         return row;
     }
@@ -100,7 +102,7 @@ public abstract class AbstractLivable implements Livable, Runnable {
 
         // possible corner positions
         LEFT_BOTTOM_CORNER, LEFT_TOP_CORNER,
-        RIGHT_BOTTOM_CORNER, RIGHT_TOP_CORNED;
+        RIGHT_BOTTOM_CORNER, RIGHT_TOP_CORNER;
     }
 
     /**
@@ -142,7 +144,7 @@ public abstract class AbstractLivable implements Livable, Runnable {
         // the next 2 checks work correctly. This is because the other
         // cases were excluded in the check "!isInCorner()".
         if (row == 0)
-            return Orientation.RIGHT_TOP_CORNED;
+            return Orientation.RIGHT_TOP_CORNER;
         else
             return Orientation.LEFT_BOTTOM_CORNER; // left bottom corner
     }

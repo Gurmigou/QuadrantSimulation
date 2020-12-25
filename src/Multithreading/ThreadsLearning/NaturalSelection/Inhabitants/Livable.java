@@ -30,6 +30,14 @@ public interface Livable {
     /**
      * The creature should stop participating in the simulation if it hasn't eaten
      * any food-units during a simulation cycle.
+     * @return true if a creature should die. Otherwise, false.
      */
-    void die();
+    boolean die();
+
+    /**
+     * The creature should perform a reproduce action.
+     * Moreover, a counter of eaten food should be set to zero.
+     * @return Thread which represents a new creature.
+     */
+    Thread reproduce();
 }
