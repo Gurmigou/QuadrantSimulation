@@ -1,19 +1,22 @@
 package Multithreading.ThreadsLearning.NaturalSelection.Inhabitants;
 
 import Multithreading.ThreadsLearning.NaturalSelection.Map.Map;
-import Multithreading.ThreadsLearning.NaturalSelection.Map.MapUnit;
 
 /**
  * An abstract class that contains basic data about a creature
  * and some methods which provide moving abilities.
  */
-public abstract class AbstractLivable implements Livable, Runnable {
+public abstract class AbstractLivable implements Livable {
+
+    /** This field is used for statistics */
     private int numOfEatenFood = 0;
+
+    // position of the creature;
     private int row;
     private int column;
 
     // a map where a simulation takes place;
-    // use protected modifier to simplify access
+    // use protected modifier to simplify access;
     protected final Map simulationMap;
 
     public AbstractLivable(Map simulationMap, int row, int column) {
@@ -62,10 +65,7 @@ public abstract class AbstractLivable implements Livable, Runnable {
     /**
      * The creature should perform a reproduce action.
      */
-    public abstract Thread reproduce();
-
-
-    public abstract void run();
+    public abstract Quadrant reproduce();
 
 
     /* Getters */
@@ -112,8 +112,9 @@ public abstract class AbstractLivable implements Livable, Runnable {
      *      abs(row - column) = map.row (is equal to map.column) --> return true;
      */
     protected boolean isInCorner() {
-        return row - column == 0 || row + column == 0
-                || Math.abs(row - column) == simulationMap.getNumOfRows();
+        return (row == simulationMap.getNumOfRows() - 1 && row - column == 0)
+                || row + column == 0
+                || Math.abs(row - column) == simulationMap.getNumOfRows() - 1;
     }
 
     /**

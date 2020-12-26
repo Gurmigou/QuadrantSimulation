@@ -39,5 +39,5 @@ public interface Livable {
      * Moreover, a counter of eaten food should be set to zero.
      * @return Thread which represents a new creature.
      */
-    Thread reproduce();
+    Quadrant reproduce();
 }
