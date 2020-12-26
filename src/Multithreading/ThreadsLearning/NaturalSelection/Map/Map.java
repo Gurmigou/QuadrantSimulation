@@ -62,7 +62,7 @@ public class Map {
      *  Removes food in each map unit.
      */
     public void clearMapFood() {
-        forEachMatrix(MapUnit::removeFood);
+        forEachMatrix(MapUnit::eatFood);
     }
 
     /**
