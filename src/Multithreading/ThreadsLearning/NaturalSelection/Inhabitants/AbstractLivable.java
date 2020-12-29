@@ -8,8 +8,8 @@ import Multithreading.ThreadsLearning.NaturalSelection.Map.Map;
  */
 public abstract class AbstractLivable implements Livable {
 
-    /** This field is used for statistics */
-    private int numOfEatenFood = 0;
+    /** This fields are used for statistics */
+    private int hasEatenCurrentRound;
 
     // position of the creature;
     private int row;
@@ -39,18 +39,16 @@ public abstract class AbstractLivable implements Livable {
     public abstract void eat();
 
     /**
-     * This method displays how many food-units the creature has eaten.
-     *
-     * @return number of eaten food-units;
+     * This method displays how many food-units the creature has already eaten.
+     * @return a number of eaten food-units;
      */
     @Override
-    public int numHasEaten() {
-        return this.numOfEatenFood;
+    public int numHasEatenCurrentRound() {
+        return hasEatenCurrentRound;
     }
 
     /**
      * This method should be used to create a new creature if a return type is "true".
-     *
      * @return "true" if a current creature can reproduce a new one.
      * Otherwise, false;
      */
@@ -58,7 +56,7 @@ public abstract class AbstractLivable implements Livable {
 
     /**
      * The creature should stop participating in the simulation if it hasn't eaten
-     * any food-units during a simulation cycle.
+     * any food-units during a simulation round.
      */
     public abstract boolean die();
 
@@ -66,6 +64,15 @@ public abstract class AbstractLivable implements Livable {
      * The creature should perform a reproduce action.
      */
     public abstract Quadrant reproduce();
+
+    /*
+     * This is Object methods that have to be overridden.
+     */
+    public abstract int hashCode();
+
+    public abstract boolean equals(Object o);
+
+    public abstract String toString();
 
 
     /* Getters */
@@ -78,16 +85,20 @@ public abstract class AbstractLivable implements Livable {
     }
 
     /* Setters */
-    public void increaseNumOfEatenFood() {
-        this.numOfEatenFood++;
-    }
-
     public void setRow(int row) {
         this.row = row;
     }
 
     public void setColumn(int column) {
         this.column = column;
+    }
+
+    public void setHasEatenCurrentRound(int hasEatenCurrentRound) {
+        this.hasEatenCurrentRound = hasEatenCurrentRound;
+    }
+
+    public void hasEatenCurrentRoundIncrement() {
+        this.hasEatenCurrentRound++;
     }
 
     /* Moving helper methods */
