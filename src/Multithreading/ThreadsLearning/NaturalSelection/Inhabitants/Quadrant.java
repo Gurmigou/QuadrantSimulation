@@ -2,9 +2,14 @@ package Multithreading.ThreadsLearning.NaturalSelection.Inhabitants;
 
 import Multithreading.ThreadsLearning.NaturalSelection.Executors.SimulationExecutor;
 import Multithreading.ThreadsLearning.NaturalSelection.Map.Map;
+import Multithreading.ThreadsLearning.NaturalSelection.Utilities.LoggerUtility;
+import Multithreading.ThreadsLearning.NaturalSelection.Utilities.StatisticsCollector;
+import Multithreading.ThreadsLearning.NaturalSelection.Utilities.TimeSyn;
 
-import java.util.Random;
-import java.util.concurrent.*;
+import java.util.Objects;
+import java.util.Random;;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 
 /**
  *  A Quadrant is an imaginary creature that will participate in the simulation.
@@ -24,20 +29,20 @@ import java.util.concurrent.*;
  *  Class "Quadrant" also implements a Runnable interface because
  *  each instance of this class will run as a unique thread.
  */
-public class Quadrant extends AbstractLivable
-        implements Runnable {
-
-    private static final long SLEEP_AFTER_STEP = 75; // is equal to 0.075 seconds
-    private static final long PERFORM_ITERATION_TIME = 7000; // is equal to 6.65 seconds
+public class Quadrant extends AbstractLivable implements Runnable {
+    // execution time parameters
+    private static final long SLEEP_AFTER_STEP = 8;
+    private static final long PERFORM_ITERATION_TIME = 2000; // is equal to 2 seconds
 
     // a unique id of a current quadrant
     public final int UNIQUE_ID = nextId++;
     private static int nextId = 1;
 
-    /**
-     *  This field is used for statistics.
-     */
-    private int hasEatenCurrentRound;
+    // these are the unique random values which are used to calculate a hash code of the object
+    private final Random random = new Random();
+    private final long uniqueForHashCode1 = random.nextLong();
+    private final long uniqueForHashCode2 = random.nextLong();
+    private final long uniqueForHashCode3 = random.nextLong();
 
     /**
      *  A simulation executor object that regulates all
@@ -45,30 +50,56 @@ public class Quadrant extends AbstractLivable
      */
     private final SimulationExecutor simulationExecutor;
 
+    /**
+     *  A statistics object that collects date (a day number - a number of creatures
+     *  that are alive) during the execution.
+     */
+    private final StatisticsCollector statisticsCollector;
 
-    public Quadrant(Map simulationMap, int row, int column,
-                    SimulationExecutor simulationExecutor) {
+    /**
+     *  A map that contains {@code ScheduledFuture} objects. These objects
+     *  are linked with the thread that executes them. If there is a task
+     *  that have to be stopped then this task will be found and stopped
+     *  using a method {@code cancel()}.
+     */
+    private ConcurrentHashMap<Quadrant, ScheduledFuture<?>> scheduledFutureMap;
+
+    /**
+     *  A logger that is used to log actions during the execution of the simulation.
+     */
+    private static final LoggerUtility loggerUtility = new LoggerUtility(
+            "LoggerQuadrant", LoggerUtility.LoggerType.FILE_LOGGER);
+
+
+    /**
+     *  This method set a {@code ConcurrentHashMap} as a value of a field of the object;
+     *  @param scheduledFutureMap a map that is set as a field value;
+     */
+    public void setScheduledFutureMap(ConcurrentHashMap<Quadrant, ScheduledFuture<?>>
+                                                               scheduledFutureMap)
+    {
+        this.scheduledFutureMap = scheduledFutureMap;
+    }
+
+    /* Constructors */
+    public Quadrant(Map simulationMap,
+                    int row, int column,
+                    SimulationExecutor simulationExecutor,
+                    StatisticsCollector statisticsCollector)
+    {
         super(simulationMap, row, column);
         this.simulationExecutor = simulationExecutor;
+        this.statisticsCollector = statisticsCollector;
     }
 
-    public static void main(String[] args) {
-
-        final int NUM_OF_THREAD = 80;
-
-        final Map map = new Map(35,35);
-//        final Quadrant operator = new Quadrant(map,0, 0);
-
-        ScheduledExecutorService ses = Executors.newScheduledThreadPool(100);
-        for (int i = 0; i < NUM_OF_THREAD; i++) {
-//            ses.scheduleAtFixedRate(operator.createOnPerimeterCoordinates(),
-//                    0, 7000, TimeUnit.MILLISECONDS);
-        }
-        ses.scheduleAtFixedRate(() -> {
-            System.out.println("!!!Analyzer works.!!!");
-        }, 6520, 7000, TimeUnit.MILLISECONDS);
+    public Quadrant(Map simulationMap, int row, int column,
+                    SimulationExecutor simulationExecutor,
+                    StatisticsCollector statisticsCollector,
+                    ConcurrentHashMap<Quadrant, ScheduledFuture<?>> scheduledFutureHashMap)
+    {
+        this(simulationMap, row, column, simulationExecutor, statisticsCollector);
+        this.scheduledFutureMap = scheduledFutureHashMap;
     }
-
 
     /**
      *  An implementation of {@code Runnable} interface. Method {@code run} has
@@ -76,68 +107,63 @@ public class Quadrant extends AbstractLivable
      */
     @Override
     public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
-            long enteredTime = System.currentTimeMillis(),
-                 curTime     = System.currentTimeMillis(),
-                 performTo   = curTime + 6500; // 6.5 seconds
+        if (!Thread.currentThread().isInterrupted()) {
+
+            // provide time synchronization of time
+            TimeSyn.enter();
+
+            long enteredTime = TimeSyn.getTimeEntered(),
+                 curTime     = TimeSyn.getTimeEntered(),
+                 performTo   = curTime + 820;
+
+            // set number of eaten food to zero;
+            setHasEatenCurrentRound(0);
 
             // update statistics
-            hasEatenCurrentRound = 0;
+            statisticsCollector.increaseNumOfAlive();
+
 
             /*
-                This loop is a one cycle of a simulation.
-                After looping a creature's param will be
-                examined.
+                This loop emulates a one round of the simulation.
+                The data will collected by statistics collector after looping .
              */
             while (curTime < performTo) {
                 // perform moving
                 move();
 
-                // if a current map unit has food, increase number of eaten food;
+                // increase a number of eaten food if a current map unit has food
                 if (simulationMap.getMapUnitWithCoordinates(getRow(), getColumn()).eatFood()) {
-                    // increase counter of eaten food;
+                    // increase counter of eaten food in the current round
                     eat();
-
-                    // update statistics
-                    hasEatenCurrentRound++;
                 }
 
-                // sleep for 0.075 seconds (== 75 milliseconds) after moving;
-                sleep(SLEEP_AFTER_STEP);
+                // sleep for 8 milliseconds after moving;
+                try {
+                    Thread.sleep(SLEEP_AFTER_STEP);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
-                // increase "curTime" value
+                // update "curTime" value
                 curTime = System.currentTimeMillis();
             }
 
             if (die()) {
-                // interrupt thread to stop executing;
-                Thread.currentThread().interrupt();
+                // cancel a current task if a current creature has dead;
+                scheduledFutureMap.remove(this).cancel(true);
             }
-            // apply reproducing if it is possible;
+            // apply reproducing process if it is possible;
             else if (canReproduce()) {
                 simulationExecutor.addNewQuadrantToQueue(reproduce(),
-                        PERFORM_ITERATION_TIME -                // time which a
-                                (System.currentTimeMillis() - enteredTime) + 10);   // new creature
-                                                                                    // will wait
-                                                                                    // until start;
+                         PERFORM_ITERATION_TIME -                         // a period of time which
+                         (System.currentTimeMillis() - enteredTime) - 20, // a new creature will wait
+                         scheduledFutureMap);                             // until starts execution;
             }
-            // sleep until execution cycle time passes
-            sleep(PERFORM_ITERATION_TIME - (System.currentTimeMillis() - enteredTime));
+
+            // stop synchronization timer
+            TimeSyn.close();
         }
     }
-
-    /**
-     * A helper method that makes a thread to fall asleep.
-     * @param time - time of sleeping;
-     */
-    private void sleep(long time) {
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     /**
      * The implementor of this interface should
@@ -291,7 +317,7 @@ public class Quadrant extends AbstractLivable
      */
     @Override
     public void eat() {
-        this.increaseNumOfEatenFood();
+        this.hasEatenCurrentRoundIncrement();
     }
 
     /**
@@ -302,15 +328,16 @@ public class Quadrant extends AbstractLivable
      */
     @Override
     public boolean canReproduce() {
-        return this.numHasEaten() >= 2;
+        return this.numHasEatenCurrentRound() >= 2;
     }
 
     /**
      * A class that represents a pair of coordinates {row - column};
      */
-    private static record Pair(int row, int column) {}
+    public static record Pair<T, Q>
+            (T firstValue, Q secondValue) {}
 
-    private static Pair getPerimeterCoordinates(Map simulationMap) {
+    public static Pair<Integer, Integer> getPerimeterCoordinates(Map simulationMap) {
         final var random = new Random();
 
         int newCreatureRow;
@@ -356,7 +383,7 @@ public class Quadrant extends AbstractLivable
             boolean leftOrRightColumn = random.nextBoolean();
             newCreatureColumn = (leftOrRightColumn) ? 0 : simulationMap.getNumOfColumns() - 1;
         }
-        return new Pair(newCreatureRow, newCreatureColumn);
+        return new Pair<>(newCreatureRow, newCreatureColumn);
     }
 
     /**
@@ -364,9 +391,10 @@ public class Quadrant extends AbstractLivable
      */
     @Override
     public Quadrant reproduce() {
-        Pair newCoordinates = getPerimeterCoordinates(this.simulationMap);
-        return new Quadrant(this.simulationMap, newCoordinates.row(),
-                newCoordinates.column(), simulationExecutor);
+        Pair<Integer, Integer> newCoordinates = getPerimeterCoordinates(this.simulationMap);
+        return new Quadrant(this.simulationMap, newCoordinates.firstValue(),
+                            newCoordinates.secondValue(), simulationExecutor,
+                            statisticsCollector, scheduledFutureMap);
     }
 
     /**
@@ -375,19 +403,30 @@ public class Quadrant extends AbstractLivable
      */
     @Override
     public boolean die() {
-        return numHasEaten() == 0;
+        return numHasEatenCurrentRound() == 0;
     }
+
 
     /* Object methods */
     @Override
     public String toString() {
-        return "Creature " + UNIQUE_ID + " {row: " + getRow()
-                + " column: " + getColumn() + "}";
+        return "Creature " + UNIQUE_ID;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Quadrant quadrant = (Quadrant) o;
+        return UNIQUE_ID == quadrant.UNIQUE_ID &&
+               uniqueForHashCode1 == quadrant.uniqueForHashCode1 &&
+               uniqueForHashCode2 == quadrant.uniqueForHashCode2 &&
+               uniqueForHashCode3 == quadrant.uniqueForHashCode3;
+    }
 
-    /* Getters */
-    public int getHasEatenCurrentRound() {
-        return hasEatenCurrentRound;
+    @Override
+    public int hashCode() {
+        return Objects.hash(UNIQUE_ID, uniqueForHashCode1,
+                            uniqueForHashCode2, uniqueForHashCode3);
     }
 }

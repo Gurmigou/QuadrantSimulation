@@ -3,6 +3,9 @@ package Multithreading.ThreadsLearning.NaturalSelection.Map;
 import java.util.Random;
 import java.util.function.Consumer;
 
+/**
+ *  This is a map where the simulation executes.
+ */
 public class Map {
     private final MapUnit[][] map;
     private final int rows;
@@ -20,6 +23,9 @@ public class Map {
         fillMapWithFood();
     }
 
+    /**
+     *  Initializes a map creating new {@code MapUnit} objects
+     */
     private void initializeMap() {
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < columns; j++)
@@ -27,35 +33,26 @@ public class Map {
     }
 
     /**
-     * Performs an operation on each map unit.
-     */
-    private void forEachMatrix(Consumer<MapUnit> consumer) {
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < columns; j++)
-                consumer.accept(map[i][j]);
-    }
-
-    /**
-     *  Returns random value that is < {@param upperBound};
+     *  @return a random value that is < {@param upperBound};
      */
     public int getRandomValue(Random random, int upperBound) {
         return random.nextInt(upperBound);
     }
 
     /**
-     *  This method returns a value in the lower and upper bounds range, INCLUDING both bounds.
+     *  @return a value in the lower and upper bounds range, INCLUDING both bounds.
      */
     public int getRandomValue(Random random, int lowerBound, int upperBound) {
         return lowerBound + random.nextInt(upperBound - lowerBound + 1);
     }
 
-    /* Getters */
-    public int getNumOfRows() {
-        return rows;
-    }
-
-    public int getNumOfColumns() {
-        return columns;
+    /**
+     *  Performs an operation on each map unit.
+     */
+    private void forEachMatrix(Consumer<MapUnit> consumer) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < columns; j++)
+                consumer.accept(map[i][j]);
     }
 
     /**
@@ -66,15 +63,14 @@ public class Map {
     }
 
     /**
-     *  Fills map with food at random positions.
+     *  Fills a map with food at random positions.
      */
     public void fillMapWithFood() {
-        var random = new Random();
-
-        // 22% will contain food. Use additional 2% (instead of 20%)
-        // to fill some more units in case random function can return
-        // similar row and column.
-        int unitsToFill = (int)(rows * columns * 0.22);
+        final var random = new Random();
+        // ~10% will contain food. Use an additional 1% to fill
+        // some more units in case a random function can return
+        // a similar row and column.
+        int unitsToFill = (int)(rows * columns * 0.11);
 
         for (int i = 0; i < unitsToFill; i++) {
             int rowToFill = getRandomValue(random, rows),
@@ -96,4 +92,12 @@ public class Map {
         return map[row][column];
     }
 
+    /* Getters */
+    public int getNumOfRows() {
+        return rows;
+    }
+
+    public int getNumOfColumns() {
+        return columns;
+    }
 }
